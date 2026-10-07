@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Laporan Dokumentasi Foto - SPPG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            html,
+            body {
+                width: 210mm;
+                height: auto !important;
+                background-color: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                display: block !important;
+            }
+            .a4-page {
+                box-shadow: none !important;
+                margin: 0 !important;
+                width: 210mm !important;
+                height: 296mm !important;
+                max-height: 296mm !important;
+                padding: 10mm 12mm !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+            }
+            .a4-page:last-child {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+        }
+        
+        .a4-page {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            margin: 0 auto 20px auto;
+            padding: 10mm 12mm;
+            box-sizing: border-box;
+            font-family: 'Times New Roman', Times, serif;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .drag-item {
+            cursor: grab;
+            transition: background-color 0.15s ease;
+        }
+        
+        .drag-item:active {
+            cursor: grabbing;
+        }
+        
+        .drag-over {
+            border-top: 2px solid #10b981 !important;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+    <!-- Top Navbar -->
+    <header class="bg-slate-900 text-white p-4 shadow-md no-print sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-camera text-emerald-400 text-2xl"></i>
+                <h1 class="font-bold text-lg tracking-wide">Generator Dokumentasi Foto SPPG</h1>
+            </div>
+            <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg font-medium shadow flex items-center gap-2 transition-all">
+                <i class="fa-solid fa-print"></i> Cetak / Simpan PDF
+            </button>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- PANEL INPUT (Kiri) -->
+        <div class="lg:col-span-4 space-y-6 no-print">
+
+            <!-- Card Upload Foto -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <h2 class="font-bold text-slate-800 text-base mb-3 flex items-center gap-2 border-b pb-2">
+                    <i class="fa-solid fa-images text-emerald-600"></i> Upload Foto Laporan
+                </h2>
+                <p class="text-xs text-slate-500 mb-4">Urutan otomatis terurut berdasarkan nomor nama file. Tetap bisa di-drag jika ingin penyesuaian manual.</p>
+
+                <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-emerald-500 border-dashed rounded-lg cursor-pointer bg-emerald-50/50 hover:bg-emerald-50 transition-all">
+                    <div class="flex flex-col items-center justify-center pt-4 pb-4">
+                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-emerald-600 mb-1"></i>
+                        <p class="text-xs font-semibold text-slate-700">Klik untuk upload foto</p>
+                        <p class="text-[10px] text-slate-500">Bisa pilih banyak gambar sekaligus</p>
+                    </div>
+                    <input type="file" id="inputFotoBatch" accept="image/*" multiple class="hidden" onchange="handleMultipleUpload(this)">
+                </label>
+
+                <!-- Daftar foto dengan Drag & Drop -->
+                <div id="fotoListControl" class="mt-4 space-y-2 max-h-80 overflow-y-auto pr-1">
+                    <!-- List foto render via JS -->
+                </div>
+            </div>
+
+            <!-- Card Pengaturan Border/Outline Gambar -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                <h2 class="font-bold text-slate-800 text-base mb-3 flex items-center gap-2 border-b pb-2">
+                    <i class="fa-solid fa-sliders text-emerald-600"></i> Tampilan Gambar
+                </h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Ketebalan Outline</label>
+                        <select id="selectBorder" onchange="updateBorderWidth(this.value)" class="w-full text-xs p-2 border rounded">
+                            <option value="1px">Tipis (1px)</option>
+                            <option value="2px" selected>Sedang (2px)</option>
+                            <option value="3px">Tebal (3px)</option>
+                            <option value="0px">Tanpa Outline</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Warna Outline</label>
+                        <div class="flex items-center gap-2 border rounded p-1 bg-white">
+                            <input type="color" id="colorPicker" value="#000000" onchange="updateBorderColor(this.value)" class="w-7 h-7 rounded cursor-pointer border-0 p-0">
+                            <span id="colorHexText" class="text-xs font-mono text-slate-600 font-semibold">#000000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- AREA PREVIEW DOKUMEN A4 (Kanan) -->
+        <div class="lg:col-span-8 flex justify-center">
+            <div class="print-container w-full flex flex-col items-center" id="pagesContainer">
+                <!-- Lembar-lembar A4 dirender otomatis via JS -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let fotoList = [];
+        let borderStyle = "2px";
+        let borderColor = "#000000";
+        let draggedIndex = null;
+
+        window.onload = () => {
+            renderPages();
+        };
+
+        function readFileAsDataURL(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handleMultipleUpload(input) {
+            const files = Array.from(input.files);
+            if (files.length === 0) return;
+
+            files.sort((a, b) => a.name.localeCompare(b.name, undefined, {
+                numeric: true,
+                sensitivity: 'base'
+            }));
+
+            for (const file of files) {
+                const src = await readFileAsDataURL(file);
+                fotoList.push({
+                    id: Date.now() + Math.random(),
+                    src: src,
+                    name: file.name
+                });
+            }
+
+            fotoList.sort((a, b) => a.name.localeCompare(b.name, undefined, {
+                numeric: true,
+                sensitivity: 'base'
+            }));
+
+            renderPages();
+            renderControlList();
+            input.value = '';
+        }
+
+        function handleDragStart(e, index) {
+            draggedIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+            e.target.classList.add('opacity-40');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e, targetIndex) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+
+            if (draggedIndex === null || draggedIndex === targetIndex) return;
+
+            const movedItem = fotoList.splice(draggedIndex, 1)[0];
+            fotoList.splice(targetIndex, 0, movedItem);
+
+            draggedIndex = null;
+            renderPages();
+            renderControlList();
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('opacity-40');
+            draggedIndex = null;
+            document.querySelectorAll('.drag-item').forEach(el => el.classList.remove('drag-over'));
+        }
+
+        function pindahUp(index) {
+            if (index > 0) {
+                const temp = fotoList[index];
+                fotoList[index] = fotoList[index - 1];
+                fotoList[index - 1] = temp;
+                renderPages();
+                renderControlList();
+            }
+        }
+
+        function pindahDown(index) {
+            if (index < fotoList.length - 1) {
+                const temp = fotoList[index];
+                fotoList[index] = fotoList[index + 1];
+                fotoList[index + 1] = temp;
+                renderPages();
+                renderControlList();
+            }
+        }
+
+        function hapusFoto(index) {
+            fotoList.splice(index, 1);
+            renderPages();
+            renderControlList();
+        }
+
+        function updateBorderWidth(val) {
+            borderStyle = val;
+            renderPages();
+        }
+
+        function updateBorderColor(val) {
+            borderColor = val;
+            document.getElementById('colorHexText').innerText = val.toUpperCase();
+            renderPages();
+        }
+
+        function renderControlList() {
+            const container = document.getElementById('fotoListControl');
+            if (fotoList.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-2">Belum ada foto diupload</p>';
+                return;
+            }
+
+            container.innerHTML = fotoList.map((item, idx) => `
+                <div class="drag-item flex items-center justify-between p-2 bg-slate-50 border rounded text-xs gap-2 select-none hover:bg-slate-100 transition-colors"
+                     draggable="true"
+                     ondragstart="handleDragStart(event, ${idx})"
+                     ondragover="handleDragOver(event)"
+                     ondragleave="handleDragLeave(event)"
+                     ondrop="handleDrop(event, ${idx})"
+                     ondragend="handleDragEnd(event)">
+                     
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                        <i class="fa-solid fa-grip-vertical text-slate-400 cursor-grab hover:text-emerald-600 text-sm"></i>
+                        <span class="truncate font-semibold text-slate-700">Hal ${idx + 1}: ${item.name}</span>
+                    </div>
+
+                    <div class="flex items-center space-x-1">
+                        <button onclick="pindahUp(${idx})" ${idx === 0 ? 'disabled class="text-slate-300 p-1 cursor-not-allowed"' : 'class="text-slate-500 hover:text-emerald-600 p-1"'} title="Naikkan">
+                            <i class="fa-solid fa-arrow-up"></i>
+                        </button>
+                        <button onclick="pindahDown(${idx})" ${idx === fotoList.length - 1 ? 'disabled class="text-slate-300 p-1 cursor-not-allowed"' : 'class="text-slate-500 hover:text-emerald-600 p-1"'} title="Turunkan">
+                            <i class="fa-solid fa-arrow-down"></i>
+                        </button>
+                        <button onclick="hapusFoto(${idx})" class="text-red-500 hover:text-red-700 p-1 ml-1" title="Hapus">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPages() {
+            const container = document.getElementById('pagesContainer');
+            container.innerHTML = '';
+
+            const dataToRender = fotoList.length > 0 ? fotoList : [{
+                src: '',
+                isPlaceholder: true
+            }];
+
+            dataToRender.forEach((item, index) => {
+                        const page = document.createElement('div');
+                        page.className = "a4-page relative";
+
+                        page.innerHTML = `
+                    <!-- KOP SURAT HEADER -->
+                    <div class="flex items-center justify-between pb-2">
+                        <div class="w-28 h-28 flex items-center justify-center overflow-hidden shrink-0">
+                            <img src="assets/logo-bgn.png" alt="Logo Kiri" class="max-h-full max-w-full object-contain" onerror="this.src='https://via.placeholder.com/100?text=Logo+Kiri'">
+                        </div>
+                        <div class="text-center flex-1 px-3">
+                            <h3 class="text-xs font-bold uppercase tracking-tight">SATUAN PELAYANAN PEMENUHAN GIZI (SPPG)</h3>
+                            <h2 class="text-lg font-extrabold uppercase tracking-wide my-0.5">JATI BARU 3</h2>
+                            <h4 class="text-xs font-bold uppercase mb-1">"YAYASAN VEJORE LENTERA MANDIRI"</h4>
+                            <p class="text-[10px] leading-tight">Jl. Cendana No. 14, RT. 001, RW. 007, Desa Jati Baru, Kecamatan Tanjung Bintang</p>
+                            <p class="text-[10px] leading-tight">Kabupaten Lampung Selatan, Provinsi Lampung</p>
+                        </div>
+                        <div class="w-28 h-28 flex items-center justify-center overflow-hidden shrink-0">
+                            <img src="assets/logoyayasan.png" alt="Logo Kanan" class="max-h-full max-w-full object-contain" onerror="this.src='https://via.placeholder.com/100?text=Logo+Kanan'">
+                        </div>
+                    </div>
+
+                    <!-- GARIS DOUBLE RESMI -->
+                    <div class="w-full border-b-[3px] border-black mb-[2px]"></div>
+                    <div class="w-full border-b-[1px] border-black mb-3"></div>
+
+                    <!-- CONTAINER FOTO UTAMA -->
+                    <div class="flex-1 flex items-center justify-center p-1 overflow-hidden" style="max-height: calc(296mm - 65mm);">
+                        ${item.isPlaceholder 
+                            ? `<div class="border-2 border-dashed border-slate-300 w-full h-full flex flex-col items-center justify-center text-slate-400">
+                                <i class="fa-regular fa-image text-5xl mb-2"></i>
+                                <p class="text-sm font-medium">Foto Dokumentasi Akan Tampil Di Sini</p>
+                               </div>`
+                            : `<img src="${item.src}" style="border: ${borderStyle} solid${borderColor}; max-height: 100%; max-width: 100%;" class="object-contain shadow-sm">`
+                        }
+                    </div>
+                `;
+
+                container.appendChild(page);
+            });
+        }
+    </script>
+</body>
+
+</html>
