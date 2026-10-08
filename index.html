@@ -9,7 +9,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @media print {
-            html, body {
+            html,
+            body {
                 width: 210mm;
                 height: auto !important;
                 background-color: white !important;
@@ -49,7 +50,7 @@
                 margin: 0;
             }
         }
-
+        
         .a4-page {
             width: 210mm;
             height: 297mm;
@@ -63,14 +64,16 @@
             flex-direction: column;
             overflow: hidden;
         }
-
+        
         .drag-item {
             cursor: grab;
             transition: background-color 0.15s ease;
         }
+        
         .drag-item:active {
             cursor: grabbing;
         }
+        
         .drag-over {
             border-top: 2px solid #10b981 !important;
         }
@@ -182,7 +185,10 @@
             const files = Array.from(input.files);
             if (files.length === 0) return;
 
-            files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+            files.sort((a, b) => a.name.localeCompare(b.name, undefined, {
+                numeric: true,
+                sensitivity: 'base'
+            }));
 
             for (const file of files) {
                 const src = await readFileAsDataURL(file);
@@ -193,11 +199,14 @@
                 });
             }
 
-            fotoList.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+            fotoList.sort((a, b) => a.name.localeCompare(b.name, undefined, {
+                numeric: true,
+                sensitivity: 'base'
+            }));
 
             renderPages();
             renderControlList();
-            input.value = ''; 
+            input.value = '';
         }
 
         function handleDragStart(e, index) {
@@ -313,13 +322,16 @@
             const container = document.getElementById('pagesContainer');
             container.innerHTML = '';
 
-            const dataToRender = fotoList.length > 0 ? fotoList : [{ src: '', isPlaceholder: true }];
+            const dataToRender = fotoList.length > 0 ? fotoList : [{
+                src: '',
+                isPlaceholder: true
+            }];
 
             dataToRender.forEach((item, index) => {
-                const page = document.createElement('div');
-                page.className = "a4-page relative";
-                
-                page.innerHTML = `
+                        const page = document.createElement('div');
+                        page.className = "a4-page relative";
+
+                        page.innerHTML = `
                     <!-- KOP SURAT HEADER -->
                     <div class="flex items-center justify-between pb-2">
                         <div class="w-28 h-28 flex items-center justify-center overflow-hidden shrink-0">
@@ -357,20 +369,50 @@
             });
         }
 
-        // FUNGSI EKSPOR KE WORD (.DOC)
+        // FUNGSI EKSPOR KE WORD (.DOC) YANG SUDAH DIPERBAIKI (Tabel-Based & Word Compatible)
         function exportToWord() {
             if (fotoList.length === 0) {
                 alert('Silakan upload foto terlebih dahulu sebelum mengunduh Word.');
                 return;
             }
 
-            const pages = document.querySelectorAll('.a4-page');
             let contentHTML = '';
 
-            pages.forEach((page, idx) => {
-                contentHTML += page.outerHTML;
-                if (idx < pages.length - 1) {
-                    contentHTML += '<br clear="all" style="page-break-before:always;" />';
+            fotoList.forEach((item, idx) => {
+                contentHTML += `
+                    <div class="word-page">
+                        <!-- KOP SURAT HEADER (Gunakan Tabel 3 Kolom agar Rapi di MS Word) -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px;">
+                            <tr>
+                                <td style="width: 15%; text-align: left; vertical-align: middle;">
+                                    <img src="assets/logo-bgn.webp" style="width: 90px; height: auto; max-height: 90px;" alt="Logo Kiri" onerror="this.src='https://via.placeholder.com/90?text=Logo+Kiri'">
+                                </td>
+                                <td style="width: 70%; text-align: center; vertical-align: middle; font-family: 'Times New Roman', serif;">
+                                    <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase; margin: 0;">SATUAN PELAYANAN PEMENUHAN GIZI (SPPG)</div>
+                                    <div style="font-size: 16pt; font-weight: bold; text-transform: uppercase; margin: 2px 0;">JATI BARU 3</div>
+                                    <div style="font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">"YAYASAN VEJORE LENTERA MANDIRI"</div>
+                                    <div style="font-size: 8.5pt; line-height: 1.2; margin: 0;">Jl. Cendana No. 14, RT. 001, RW. 007, Desa Jati Baru, Kecamatan Tanjung Bintang</div>
+                                    <div style="font-size: 8.5pt; line-height: 1.2; margin: 0;">Kabupaten Lampung Selatan, Provinsi Lampung</div>
+                                </td>
+                                <td style="width: 15%; text-align: right; vertical-align: middle;">
+                                    <img src="assets/logoyayasan.png" style="width: 90px; height: auto; max-height: 90px;" alt="Logo Kanan" onerror="this.src='https://via.placeholder.com/90?text=Logo+Kanan'">
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- GARIS DOUBLE RESMI -->
+                        <div style="border-bottom: 3px solid #000; margin-bottom: 2px; width: 100%;"></div>
+                        <div style="border-bottom: 1px solid #000; margin-bottom: 15px; width: 100%;"></div>
+
+                        <!-- CONTAINER FOTO UTAMA -->
+                        <div style="text-align: center; width: 100%; margin-top: 10px;">
+                            <img src="${item.src}" style="border: ${borderStyle} solid ${borderColor}; max-width: 100%; max-height: 220mm; height: auto;" alt="Foto Dokumentasi">
+                        </div>
+                    </div>
+                `;
+
+                if (idx < fotoList.length - 1) {
+                    contentHTML += '<br clear="all" style="page-break-before:always; mso-break-type:section-break;" />';
                 }
             });
 
@@ -381,27 +423,37 @@
                 <head>
                     <meta charset='utf-8'>
                     <title>Laporan Dokumentasi Foto SPPG</title>
+                    <!--[if gte mso 9]>
+                    <xml>
+                        <w:WordDocument>
+                            <w:View>Print</w:View>
+                            <w:Zoom>100</w:Zoom>
+                            <w:DoNotOptimizeForBrowser/>
+                        </w:WordDocument>
+                    </xml>
+                    <![endif]-->
                     <style>
-                        @page {
+                        @page Section1 {
                             size: 210mm 297mm;
-                            margin: 10mm 12mm;
+                            margin: 10mm 12mm 10mm 12mm;
+                        }
+                        div.Section1 {
+                            page: Section1;
                         }
                         body {
                             font-family: 'Times New Roman', serif;
+                            margin: 0;
+                            padding: 0;
                         }
-                        .a4-page {
+                        .word-page {
                             width: 100%;
-                            page-break-after: always;
-                            margin-bottom: 20px;
-                        }
-                        img {
-                            max-width: 100%;
-                            height: auto;
                         }
                     </style>
                 </head>
                 <body>
-                    ${contentHTML}
+                    <div class="Section1">
+                        ${contentHTML}
+                    </div>
                 </body>
                 </html>
             `;
